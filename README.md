@@ -1,2 +1,1 @@
-# sanity-plugin-text-generator
-A plugin for Sanity CMS to generate text content
+This repository is empty. Any task executed on it should be considered a new capability and needs to be created.
