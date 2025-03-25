@@ -1,12 +1,8 @@
 {
-  "paths": {
-    "source": "./src",
-    "compiled": "./dist"
-  },
   "parts": [
     {
-      "name": "part:sanity-plugin-text-generator",
-      "description": "Text generation plugin for Sanity using MediaPipe and Gemma 3"
+      "implements": "part:@sanity/base/sanity-root",
+      "path": "./v2-incompatible.js"
     }
   ]
 }
