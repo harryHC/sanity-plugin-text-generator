@@ -1,18 +1,27 @@
-/**
- * Model URLs for different LLMs
- */
-interface ModelUrl {
-  MODEL: string
+interface Model {
+  url: string
+  maxTokens: number
+  temperature: number
+  model: string
 }
 
 interface ModelsCollection {
-  GEMMA_3_1B: ModelUrl
+  GEMMA_3_1B: Model
+  DEEPSEEK_R1_1_5B: Model
 }
 
-const MODEL_URLS: ModelsCollection = {
+const MODELS: ModelsCollection = {
   GEMMA_3_1B: {
-    MODEL:
-      'https://media.githubusercontent.com/media/harryHC/sanity-plugin-text-generator/main/gemma3-1b-it-int4.task',
+    url: 'https://media.githubusercontent.com/media/harryHC/sanity-plugin-text-generator/main/gemma3-1b-it-int4.task',
+    maxTokens: 2048,
+    temperature: 0.8,
+    model: 'Gemma 3 1B',
+  },
+  DEEPSEEK_R1_1_5B: {
+    url: 'https://media.githubusercontent.com/media/harryHC/sanity-plugin-text-generator/main/deepseek_q8_ekv1280.task',
+    maxTokens: 2048,
+    temperature: 0.8,
+    model: 'DeepSeek R1 1.5B',
   },
 }
 
@@ -24,11 +33,6 @@ const GENAI_FILESET_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-genai/w
 interface TextGenerationDefaults {
   MAX_TOKENS: number
   TEMPERATURE: number
-}
-
-const TEXT_GENERATION_DEFAULTS: TextGenerationDefaults = {
-  MAX_TOKENS: 2048, // Maximum supported for Gemma 3 1B
-  TEMPERATURE: 0.8,
 }
 
 /**
@@ -69,12 +73,11 @@ const SUPPORTED_LANGUAGES: Language[] = [
 export {
   GENAI_FILESET_URL,
   type Language,
-  MODEL_URLS,
+  type Model,
+  MODELS,
   type ModelsCollection,
-  type ModelUrl,
   STORAGE_KEYS,
   type StorageKeys,
   SUPPORTED_LANGUAGES,
-  TEXT_GENERATION_DEFAULTS,
   type TextGenerationDefaults,
 }

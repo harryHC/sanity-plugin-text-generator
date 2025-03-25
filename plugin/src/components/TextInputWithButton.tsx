@@ -1,4 +1,4 @@
-import {ChevronDownIcon, ComposeSparklesIcon} from '@sanity/icons'
+import {ChevronDownIcon, ComposeSparklesIcon, StopIcon} from '@sanity/icons'
 import {Button, Flex, Menu, MenuButton, MenuItem, Select, Spinner, Stack} from '@sanity/ui'
 import React, {ChangeEvent, useCallback, useState} from 'react'
 import {
@@ -11,7 +11,7 @@ import {
 } from 'sanity'
 
 import {LanguageCode, SUPPORTED_LANGUAGES} from '../constants'
-import {generateText, TextGenerationOptions} from '../model'
+import {cancelTextGeneration, generateText, TextGenerationOptions} from '../model'
 import {getCachedLanguage, setCachedLanguage} from './../cache'
 
 export type GenerationOption = 'Generate' | 'Summarise' | 'Translate'
@@ -101,6 +101,11 @@ const TextInputWithButton = (props: ObjectInputProps | StringInputProps): React.
     generateText(options)
   }, [language, option, document, props.id, schemaType.title, value, generateTextCallback])
 
+  const handleStopGeneration = useCallback(() => {
+    cancelTextGeneration()
+    setIsGenerating(false)
+  }, [])
+
   const languageChangeHandler = useCallback((e: ChangeEvent<HTMLSelectElement>) => {
     setLanguage(e.target.value as LanguageCode)
   }, [])
@@ -126,50 +131,78 @@ const TextInputWithButton = (props: ObjectInputProps | StringInputProps): React.
 
       {showGenButtons && (
         <Flex
-          style={{position: 'absolute', top: '0.5rem', right: '0.5rem', zIndex: 1}}
+          style={{
+            position: 'absolute',
+            top: '0.3rem',
+            right: '0.3rem',
+            zIndex: 1,
+          }}
           wrap={'wrap'}
           justify={'flex-end'}
         >
           <Button
             onClick={handleButtonClick}
-            icon={isGenerating ? Spinner : ComposeSparklesIcon}
+            padding={[2, 1.5, 1.5]}
+            // eslint-disable-next-line react/jsx-no-bind
+            icon={
+              isGenerating
+                ? (_props) => (
+                    <Spinner
+                      {..._props}
+                      style={{
+                        transform: 'translateY(0.6rem)',
+                      }}
+                    />
+                  )
+                : ComposeSparklesIcon
+            }
             text={isGenerating ? 'Working on it...' : option}
             tone="primary"
             disabled={isGenerating}
             type="button"
             mode="default"
             style={{borderTopRightRadius: 0, borderBottomRightRadius: 0}}
-            fontSize={1}
-            paddingY={1}
           />
 
           <Stack space={2}>
-            <MenuButton
-              button={
-                <Button
-                  style={{borderTopLeftRadius: 0, borderBottomLeftRadius: 0}}
-                  mode="default"
-                  disabled={isGenerating}
-                  tone="primary"
-                  icon={ChevronDownIcon}
-                />
-              }
-              id="text-generation-options"
-              menu={
-                <Menu>
-                  {GENERATION_OPTIONS.map((genOption) => (
-                    <MenuItem
-                      key={genOption}
-                      text={genOption}
-                      // eslint-disable-next-line react/jsx-no-bind
-                      onClick={() => handleOptionChange(genOption)}
-                      tone={option === genOption ? 'primary' : 'default'}
-                    />
-                  ))}
-                </Menu>
-              }
-              popover={{portal: true, placement: 'bottom-end'}}
-            />
+            {isGenerating ? (
+              <Button
+                style={{borderTopLeftRadius: 0, borderBottomLeftRadius: 0}}
+                onClick={handleStopGeneration}
+                icon={StopIcon}
+                text="Stop"
+                tone="critical"
+                mode="default"
+              />
+            ) : (
+              <MenuButton
+                button={
+                  <Button
+                    style={{borderTopLeftRadius: 0, borderBottomLeftRadius: 0}}
+                    mode="default"
+                    tone="primary"
+                    icon={ChevronDownIcon}
+                    padding={[2, 1.5, 1.5]}
+                  />
+                }
+                id="text-generation-options"
+                menu={
+                  <Menu>
+                    {GENERATION_OPTIONS.map((genOption) => (
+                      <MenuItem
+                        padding={[2, 1.5, 1.5]}
+                        key={genOption}
+                        text={genOption}
+                        // eslint-disable-next-line react/jsx-no-bind
+                        onClick={() => handleOptionChange(genOption)}
+                        tone={option === genOption ? 'primary' : 'default'}
+                      />
+                    ))}
+                  </Menu>
+                }
+                popover={{portal: true, placement: 'bottom-end'}}
+              />
+            )}
           </Stack>
 
           {showLanguageSelect && (

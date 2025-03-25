@@ -77,7 +77,7 @@ const setCachedLanguage = (language: string): void => {
  */
 const loadModelFromUrl = async (
   modelUrl: string,
-  progressCallback: (progress: number) => void,
+  progressCallback?: (progress: number) => void,
 ): Promise<string> => {
   try {
     if (!FileProxyCache) {

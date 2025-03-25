@@ -2,6 +2,13 @@
 
 This plugin for Sanity CMS allows you to generate text content using Gemma 3. It provides options to generate, summarise, and translate text.
 
+## Features
+
+- Generate new content
+- Summarize existing content
+- Translate content to various languages
+- Cancel text generation in progress with a stop button
+
 ## Running the Development Server
 
 To run the development server, use the following command:
