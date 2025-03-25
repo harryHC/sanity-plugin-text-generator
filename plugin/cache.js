@@ -1,32 +1,60 @@
-const fs = require('fs');
-const path = require('path');
+import FileProxyCache from 'https://cdn.jsdelivr.net/gh/jasonmayes/web-ai-model-proxy-cache@main/FileProxyCache.min.js';
+import { STORAGE_KEYS } from './constants.js';
 
-const cacheFilePath = path.join(__dirname, 'cache.json');
-
-const readCache = () => {
-  if (fs.existsSync(cacheFilePath)) {
-    const data = fs.readFileSync(cacheFilePath, 'utf-8');
-    return JSON.parse(data);
-  }
-  return {};
-};
-
-const writeCache = (cache) => {
-  fs.writeFileSync(cacheFilePath, JSON.stringify(cache, null, 2), 'utf-8');
-};
+// Configure FileProxyCache
+FileProxyCache.setCacheName('SanityTextGenerator');
+FileProxyCache.setShardSize(134217728); // 128MB shards
+FileProxyCache.enableDebug(false);
 
 const getCachedLanguage = () => {
-  const cache = readCache();
-  return cache.language || 'en';
+  if (typeof window !== 'undefined' && window.localStorage) {
+    return localStorage.getItem(STORAGE_KEYS.LANGUAGE) || 'en';
+  }
+  return 'en';
 };
 
 const setCachedLanguage = (language) => {
-  const cache = readCache();
-  cache.language = language;
-  writeCache(cache);
+  if (typeof window !== 'undefined' && window.localStorage) {
+    localStorage.setItem(STORAGE_KEYS.LANGUAGE, language);
+  }
 };
 
-module.exports = {
+/**
+ * Loads a model from URL with caching support
+ * @param {string} modelUrl - URL of the model to load
+ * @param {function} progressCallback - Optional callback for progress updates
+ * @returns {Promise<string>} Data URL of the cached model
+ */
+const loadModelFromUrl = async (modelUrl, progressCallback = null) => {
+  try {
+    const dataUrl = await FileProxyCache.loadFromURL(modelUrl, progressCallback);
+    return dataUrl;
+  } catch (error) {
+    console.error('Error loading model:', error);
+    throw error;
+  }
+};
+
+/**
+ * Checks if a model URL is cached
+ * @param {string} modelUrl - URL to check
+ * @returns {Promise<boolean>} True if cached
+ */
+const isModelCached = async (modelUrl) => {
+  return await FileProxyCache.isCached(modelUrl);
+};
+
+/**
+ * Clear all cached models
+ */
+const clearModelCache = async () => {
+  return await FileProxyCache.clearCache();
+};
+
+export {
   getCachedLanguage,
   setCachedLanguage,
+  loadModelFromUrl,
+  isModelCached,
+  clearModelCache
 };

@@ -1,24 +1,17 @@
-import { defineType, defineField } from 'sanity';
-import TextInputWithButton from './components/TextInputWithButton';
+import { definePlugin } from 'sanity';
+import { TextInputWithButtonContainer } from './index';
 
-export default defineType({
-  name: 'documentWithTextInput',
-  type: 'document',
-  title: 'Document with Text Input',
-  fields: [
-    defineField({
-      name: 'textInput',
-      type: 'string',
-      title: 'Text Input',
-      inputComponent: TextInputWithButton,
-    }),
-  ],
-  components: {
-    input: (props) => {
-      if (props.type === 'string') {
-        return <TextInputWithButton {...props} />;
+export default definePlugin({
+  name: 'sanity-plugin-text-generator',
+
+  schema: {
+    types: [
+      {
+        name: 'string',
+        components: {
+          input: TextInputWithButtonContainer
+        }
       }
-      return props.children;
-    },
-  },
+    ]
+  }
 });
