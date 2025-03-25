@@ -1,32 +1,78 @@
-import {Box, Button, Select, Stack} from '@sanity/ui'
+import {ChevronDownIcon, ComposeSparklesIcon} from '@sanity/icons'
+import {Button, Flex, Menu, MenuButton, MenuItem, Select, Spinner, Stack} from '@sanity/ui'
 import React, {ChangeEvent, useCallback, useState} from 'react'
-import {ObjectInputProps, set, StringInputProps, useFormValue} from 'sanity'
+import {
+  ObjectInputProps,
+  SanityDocument,
+  set,
+  StringInputProps,
+  useClient,
+  useFormValue,
+} from 'sanity'
 
-import {generateText} from '../model'
+import {LanguageCode, SUPPORTED_LANGUAGES} from '../constants'
+import {generateText, TextGenerationOptions} from '../model'
 import {getCachedLanguage, setCachedLanguage} from './../cache'
 
-export type GenerationOption = 'Translate' | 'Summarise' | 'Generate'
-export type LanguageCode = 'en' | 'es' | 'fr' | 'de' | 'it' | 'pt' | 'zh' | 'ja' | ''
+export type GenerationOption = 'Generate' | 'Summarise' | 'Translate'
 export type DocumentContext = Record<string, unknown>
 
+const GENERATION_OPTIONS: GenerationOption[] = ['Generate', 'Summarise', 'Translate']
+
+// Helper function to extract string values from document context
+const extractStringValues = (document: SanityDocument): Record<string, string> => {
+  const result: Record<string, string> = {}
+
+  Object.entries(document).forEach(([key, value]) => {
+    if (key.startsWith('_') || Array.isArray(value)) {
+      return
+    }
+
+    // Type check before accessing _type property
+    if (typeof value === 'object' && value !== null && '_type' in value) {
+      if (value._type === 'reference' || value._type === 'image') {
+        return
+      }
+    }
+    result[key] = value as string
+  })
+
+  return result
+}
+
 const TextInputWithButton = (props: ObjectInputProps | StringInputProps): React.ReactElement => {
-  const {onChange, value, renderDefault, level, schemaType} = props
+  const {onChange, value = '', renderDefault, level, schemaType} = props
   const [option, setOption] = useState<GenerationOption>('Generate')
   const [language, setLanguage] = useState<LanguageCode>('')
   const [showLanguageSelect, setShowLanguageSelect] = useState<boolean>(false)
   const [isGenerating, setIsGenerating] = useState<boolean>(false)
-  const document = useFormValue([]) as DocumentContext
+  const document = useFormValue([]) as SanityDocument
   const [showGenButtons, setShowGenButtons] = useState<boolean>(false)
 
-  const handleOptionChange = useCallback((e: ChangeEvent<HTMLSelectElement>) => {
-    const selectedOption = e.target.value as GenerationOption
-    setOption(selectedOption)
-    if (selectedOption === 'Translate') {
+  // Get Sanity client
+  const client = useClient({apiVersion: '2023-03-01'})
+  client.withConfig({apiVersion: '2023-03-01', useCdn: false, perspective: 'raw'})
+
+  const handleOptionChange = useCallback((newOption: GenerationOption) => {
+    setOption(newOption)
+    if (newOption === 'Translate') {
       setShowLanguageSelect(true)
     } else {
       setShowLanguageSelect(false)
     }
   }, [])
+
+  const generateTextCallback = useCallback(
+    (results: string = '', complete: boolean) => {
+      if (complete) {
+        setIsGenerating(false)
+        setShowGenButtons(false)
+      }
+
+      onChange(set(results))
+    },
+    [onChange],
+  )
 
   const handleButtonClick = useCallback(async (): Promise<void> => {
     setIsGenerating(true)
@@ -40,28 +86,31 @@ const TextInputWithButton = (props: ObjectInputProps | StringInputProps): React.
       setCachedLanguage(selectedLanguage)
     }
 
-    const callback = (partialResults: string, complete: boolean) => {
-      let newText: string = value + partialResults
-      if (complete) {
-        newText += '\n'
-        setIsGenerating(false)
-      }
-      onChange(set(newText))
+    // Extract valuable string data from document
+    const extractedContext = extractStringValues(document)
+
+    const options: TextGenerationOptions = {
+      field: `${props.id} (${schemaType.title})`,
+      value: value as string,
+      context: extractedContext,
+      generationOption: option,
+      language: selectedLanguage,
+      callback: generateTextCallback,
     }
 
-    generateText(document, option, selectedLanguage, callback)
-  }, [language, option, document, value, onChange])
+    generateText(options)
+  }, [language, option, document, props.id, schemaType.title, value, generateTextCallback])
 
   const languageChangeHandler = useCallback((e: ChangeEvent<HTMLSelectElement>) => {
     setLanguage(e.target.value as LanguageCode)
   }, [])
 
   const onMouseEnter = useCallback(() => {
-    setShowGenButtons(schemaType.jsonType === 'string' && level !== 0)
-  }, [level, schemaType.jsonType])
+    setShowGenButtons((schemaType.jsonType === 'string' && level !== 0) || isGenerating)
+  }, [isGenerating, level, schemaType.jsonType])
   const onMouseLeave = useCallback(() => {
-    setShowGenButtons(false)
-  }, [])
+    setShowGenButtons(isGenerating || false)
+  }, [isGenerating])
 
   return (
     <Stack
@@ -76,35 +125,65 @@ const TextInputWithButton = (props: ObjectInputProps | StringInputProps): React.
       {renderDefault(props)}
 
       {showGenButtons && (
-        <Box style={{position: 'absolute', top: 0, right: 0, zIndex: 1}}>
-          <Stack space={3}>
-            <Select onChange={handleOptionChange} value={option}>
-              <option value="Generate">Generate</option>
-              <option value="Summarise">Summarise</option>
-              <option value="Translate">Translate</option>
-            </Select>
+        <Flex
+          style={{position: 'absolute', top: '0.5rem', right: '0.5rem', zIndex: 1}}
+          wrap={'wrap'}
+          justify={'flex-end'}
+        >
+          <Button
+            onClick={handleButtonClick}
+            icon={isGenerating ? Spinner : ComposeSparklesIcon}
+            text={isGenerating ? 'Working on it...' : option}
+            tone="primary"
+            disabled={isGenerating}
+            type="button"
+            mode="default"
+            style={{borderTopRightRadius: 0, borderBottomRightRadius: 0}}
+            fontSize={1}
+            paddingY={1}
+          />
 
-            {showLanguageSelect && (
-              <Select onChange={languageChangeHandler} value={language}>
-                <option value="en">English</option>
-                <option value="es">Spanish</option>
-                <option value="fr">French</option>
-                <option value="de">German</option>
-                <option value="it">Italian</option>
-                <option value="pt">Portuguese</option>
-                <option value="zh">Chinese</option>
-                <option value="ja">Japanese</option>
-              </Select>
-            )}
-
-            <Button
-              onClick={handleButtonClick}
-              text={isGenerating ? 'Generating...' : 'Generate Text'}
-              tone="positive"
-              disabled={isGenerating}
+          <Stack space={2}>
+            <MenuButton
+              button={
+                <Button
+                  style={{borderTopLeftRadius: 0, borderBottomLeftRadius: 0}}
+                  mode="default"
+                  disabled={isGenerating}
+                  tone="primary"
+                  icon={ChevronDownIcon}
+                />
+              }
+              id="text-generation-options"
+              menu={
+                <Menu>
+                  {GENERATION_OPTIONS.map((genOption) => (
+                    <MenuItem
+                      key={genOption}
+                      text={genOption}
+                      // eslint-disable-next-line react/jsx-no-bind
+                      onClick={() => handleOptionChange(genOption)}
+                      tone={option === genOption ? 'primary' : 'default'}
+                    />
+                  ))}
+                </Menu>
+              }
+              popover={{portal: true, placement: 'bottom-end'}}
             />
           </Stack>
-        </Box>
+
+          {showLanguageSelect && (
+            <div style={{marginTop: '0.5rem', flex: '0 0 50%'}}>
+              <Select onChange={languageChangeHandler} value={language} disabled={isGenerating}>
+                {SUPPORTED_LANGUAGES.map((lang) => (
+                  <option key={lang.code} value={lang.code}>
+                    {lang.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          )}
+        </Flex>
       )}
     </Stack>
   )

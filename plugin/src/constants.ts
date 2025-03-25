@@ -12,7 +12,7 @@ interface ModelsCollection {
 const MODEL_URLS: ModelsCollection = {
   GEMMA_3_1B: {
     MODEL:
-      'https://raw.githubusercontent.com/harryHC/sanity-plugin-text-generator/refs/heads/main/gemma3-1b-it-int4.task',
+      'https://media.githubusercontent.com/media/harryHC/sanity-plugin-text-generator/main/gemma3-1b-it-int4.task',
   },
 }
 
@@ -27,7 +27,7 @@ interface TextGenerationDefaults {
 }
 
 const TEXT_GENERATION_DEFAULTS: TextGenerationDefaults = {
-  MAX_TOKENS: 512,
+  MAX_TOKENS: 2048, // Maximum supported for Gemma 3 1B
   TEMPERATURE: 0.8,
 }
 
@@ -44,11 +44,10 @@ const STORAGE_KEYS: StorageKeys = {
   SELECTED_MODEL: 'sanityTextGenerator_selectedModel',
 }
 
-/**
- * Supported language definition
- */
+export type LanguageCode = 'gr' | 'en' | 'es' | 'fr' | 'de' | 'it' | 'pt' | 'zh' | 'ja' | ''
+
 interface Language {
-  code: string
+  code: LanguageCode
   name: string
 }
 
@@ -56,6 +55,7 @@ interface Language {
  * Supported languages
  */
 const SUPPORTED_LANGUAGES: Language[] = [
+  {code: 'gr', name: 'Greek'},
   {code: 'en', name: 'English'},
   {code: 'es', name: 'Spanish'},
   {code: 'fr', name: 'French'},

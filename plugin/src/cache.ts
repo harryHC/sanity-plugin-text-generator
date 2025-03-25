@@ -1,5 +1,4 @@
-import {LanguageCode} from './components/TextInputWithButton'
-import {STORAGE_KEYS} from './constants'
+import {LanguageCode, STORAGE_KEYS} from './constants'
 
 // Extend the global Window interface to include FileProxyCache
 declare global {
@@ -22,7 +21,7 @@ type FileProxyCacheType = {
   setCacheName: (name: string) => void
   setShardSize: (size: number) => void
   enableDebug: (enable: boolean) => void
-  loadFromURL: (url: string, progressCallback?: (progress: number) => void) => Promise<ArrayBuffer>
+  loadFromURL: (url: string, progressCallback?: (progress: number) => void) => Promise<string>
   isCached: (url: string) => Promise<boolean>
   clearCache: () => Promise<boolean>
 }
@@ -74,18 +73,18 @@ const setCachedLanguage = (language: string): void => {
  * Loads a model from URL with caching support
  * @param {string} modelUrl - URL of the model to load
  * @param {function} progressCallback - Optional callback for progress updates
- * @returns {Promise<ArrayBuffer>} Data buffer of the cached model
+ * @returns {Promise<string>} Data URL path to the model
  */
 const loadModelFromUrl = async (
   modelUrl: string,
   progressCallback: (progress: number) => void,
-): Promise<ArrayBuffer> => {
+): Promise<string> => {
   try {
     if (!FileProxyCache) {
       throw new Error('FileProxyCache not initialized')
     }
-    const dataBuffer = await FileProxyCache.loadFromURL(modelUrl, progressCallback)
-    return dataBuffer
+    const dataURL = await FileProxyCache.loadFromURL(modelUrl, progressCallback)
+    return dataURL
   } catch (error) {
     console.error('Error loading model:', error)
     throw error
