@@ -12,14 +12,4 @@ export default defineConfig({
       'ae-missing-release-tag': 'off',
     },
   },
-
-  // Add static assets configuration for the worker file
-  assets: {
-    sources: [
-      {
-        from: 'src/textGeneratorWorker.js',
-        to: 'dist/textGeneratorWorker.js',
-      },
-    ],
-  },
 })

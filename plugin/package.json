@@ -24,9 +24,10 @@
       "import": "./dist/index.mjs",
       "default": "./dist/index.js"
     },
-    "./textGeneratorWorker": {
-      "source": "./src/textGeneratorWorker.js",
-      "default": "./dist/textGeneratorWorker.js"
+    "./worker": {
+      "source": "./src/worker.mjs",
+      "import": "./dist/worker.mjs",
+      "default": "./dist/worker.js"
     },
     "./package.json": "./package.json"
   },
@@ -47,6 +48,7 @@
     "watch": "pkg-utils watch --strict"
   },
   "dependencies": {
+    "@huggingface/transformers": "^3.4.1",
     "@mediapipe/tasks-genai": "^0.10.22",
     "@sanity/icons": "^3.7.0",
     "@sanity/incompatible-plugin": "^1.0.5",

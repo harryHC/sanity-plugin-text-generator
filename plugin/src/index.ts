@@ -1,6 +1,7 @@
 import React from 'react'
 import {definePlugin, InputProps, PluginOptions, StringInputProps} from 'sanity'
 
+import CustomStudioLayout from './components/CustomStudioLayout'
 import TextInputWithButton from './components/TextInputWithButton'
 
 /**
@@ -33,6 +34,11 @@ export const textGenerator = definePlugin<TextGeneratorPluginConfig | void>((_co
 
   const pluginConfig: PluginOptions = {
     name: 'sanity-plugin-text-generator',
+    studio: {
+      components: {
+        layout: CustomStudioLayout,
+      },
+    },
     form: {
       components: {
         input: TextInputComponent,

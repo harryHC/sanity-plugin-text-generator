@@ -1,5 +1,5 @@
-import {ChevronDownIcon, ComposeSparklesIcon, StopIcon} from '@sanity/icons'
-import {Button, Flex, Menu, MenuButton, MenuItem, Select, Spinner, Stack} from '@sanity/ui'
+import {ComposeSparklesIcon, StopIcon} from '@sanity/icons'
+import {Button, Flex, Select, Spinner, SpinnerProps, Stack} from '@sanity/ui'
 import React, {ChangeEvent, useCallback, useState} from 'react'
 import {
   ObjectInputProps,
@@ -10,14 +10,22 @@ import {
   useFormValue,
 } from 'sanity'
 
-import {LanguageCode, SUPPORTED_LANGUAGES} from '../constants'
-import {cancelTextGeneration, generateText, TextGenerationOptions} from '../model'
+import {LanguageCode, Model, SUPPORTED_LANGUAGES} from '../constants'
+import {
+  cancelTextGeneration,
+  generateText,
+  getSavedModelOption,
+  loadModel,
+  saveModelOption,
+  TextGenerationOptions,
+} from '../model'
 import {getCachedLanguage, setCachedLanguage} from './../cache'
+import ActionsMenu, {GenerationOption} from './ActionsMenu'
+import SettingsMenu from './SettingsMenu'
 
-export type GenerationOption = 'Generate' | 'Summarise' | 'Translate'
 export type DocumentContext = Record<string, unknown>
 
-const GENERATION_OPTIONS: GenerationOption[] = ['Generate', 'Summarise', 'Translate']
+export const BUTTONS_PADDING: number[] = [2, 1.5, 1.5]
 
 // Helper function to extract string values from document context
 const extractStringValues = (document: SanityDocument): Record<string, string> => {
@@ -43,7 +51,8 @@ const extractStringValues = (document: SanityDocument): Record<string, string> =
 const TextInputWithButton = (props: ObjectInputProps | StringInputProps): React.ReactElement => {
   const {onChange, value = '', renderDefault, level, schemaType} = props
   const [option, setOption] = useState<GenerationOption>('Generate')
-  const [language, setLanguage] = useState<LanguageCode>('')
+  const [model, setModel] = useState<Model>(getSavedModelOption())
+  const [language, setLanguage] = useState<LanguageCode>(SUPPORTED_LANGUAGES[0].code)
   const [showLanguageSelect, setShowLanguageSelect] = useState<boolean>(false)
   const [isGenerating, setIsGenerating] = useState<boolean>(false)
   const document = useFormValue([]) as SanityDocument
@@ -60,6 +69,13 @@ const TextInputWithButton = (props: ObjectInputProps | StringInputProps): React.
     } else {
       setShowLanguageSelect(false)
     }
+  }, [])
+
+  const handleModelChange = useCallback((newModel: Model) => {
+    setModel(newModel)
+    saveModelOption(newModel)
+    // Load the new model
+    loadModel(newModel)
   }, [])
 
   const generateTextCallback = useCallback(
@@ -117,6 +133,19 @@ const TextInputWithButton = (props: ObjectInputProps | StringInputProps): React.
     setShowGenButtons(isGenerating || false)
   }, [isGenerating])
 
+  const LoadingIcon = (
+    _props: React.JSX.IntrinsicAttributes &
+      Omit<SpinnerProps & Omit<React.HTMLProps<HTMLDivElement>, 'size' | 'as'>, 'ref'> &
+      React.RefAttributes<HTMLDivElement>,
+  ) => (
+    <Spinner
+      {..._props}
+      style={{
+        transform: 'translateY(0.6rem)',
+      }}
+    />
+  )
+
   return (
     <Stack
       space={1}
@@ -136,26 +165,15 @@ const TextInputWithButton = (props: ObjectInputProps | StringInputProps): React.
             top: '0.3rem',
             right: '0.3rem',
             zIndex: 1,
+            alignItems: 'center',
           }}
-          wrap={'wrap'}
           justify={'flex-end'}
         >
           <Button
             onClick={handleButtonClick}
-            padding={[2, 1.5, 1.5]}
+            padding={BUTTONS_PADDING}
             // eslint-disable-next-line react/jsx-no-bind
-            icon={
-              isGenerating
-                ? (_props) => (
-                    <Spinner
-                      {..._props}
-                      style={{
-                        transform: 'translateY(0.6rem)',
-                      }}
-                    />
-                  )
-                : ComposeSparklesIcon
-            }
+            icon={isGenerating ? LoadingIcon : ComposeSparklesIcon}
             text={isGenerating ? 'Working on it...' : option}
             tone="primary"
             disabled={isGenerating}
@@ -164,50 +182,52 @@ const TextInputWithButton = (props: ObjectInputProps | StringInputProps): React.
             style={{borderTopRightRadius: 0, borderBottomRightRadius: 0}}
           />
 
-          <Stack space={2}>
+          <div style={{minWidth: isGenerating ? 40 : 60}}>
             {isGenerating ? (
               <Button
-                style={{borderTopLeftRadius: 0, borderBottomLeftRadius: 0}}
+                style={{borderTopLeftRadius: 0, borderBottomLeftRadius: 0, width: '100%'}}
                 onClick={handleStopGeneration}
                 icon={StopIcon}
-                text="Stop"
+                aria-label="Stop text generation"
                 tone="critical"
                 mode="default"
+                padding={BUTTONS_PADDING}
               />
             ) : (
-              <MenuButton
-                button={
-                  <Button
-                    style={{borderTopLeftRadius: 0, borderBottomLeftRadius: 0}}
-                    mode="default"
-                    tone="primary"
-                    icon={ChevronDownIcon}
-                    padding={[2, 1.5, 1.5]}
-                  />
-                }
-                id="text-generation-options"
-                menu={
-                  <Menu>
-                    {GENERATION_OPTIONS.map((genOption) => (
-                      <MenuItem
-                        padding={[2, 1.5, 1.5]}
-                        key={genOption}
-                        text={genOption}
-                        // eslint-disable-next-line react/jsx-no-bind
-                        onClick={() => handleOptionChange(genOption)}
-                        tone={option === genOption ? 'primary' : 'default'}
-                      />
-                    ))}
-                  </Menu>
-                }
-                popover={{portal: true, placement: 'bottom-end'}}
-              />
+              <>
+                <ActionsMenu
+                  selectedOption={option}
+                  onOptionChange={handleOptionChange}
+                  MenuToggleButtonProps={{
+                    style: {
+                      borderRadius: 0,
+                      borderLeft: '1px solid',
+                    },
+                  }}
+                />
+                <SettingsMenu
+                  selectedOption={model}
+                  onOptionChange={handleModelChange}
+                  MenuToggleButtonProps={{
+                    style: {
+                      borderTopLeftRadius: 0,
+                      borderBottomLeftRadius: 0,
+                      borderLeft: '1px solid',
+                    },
+                  }}
+                />
+              </>
             )}
-          </Stack>
+          </div>
 
           {showLanguageSelect && (
-            <div style={{marginTop: '0.5rem', flex: '0 0 50%'}}>
-              <Select onChange={languageChangeHandler} value={language} disabled={isGenerating}>
+            <div style={{marginLeft: 8, flex: '0 0 50%'}}>
+              <Select
+                onChange={languageChangeHandler}
+                value={language}
+                disabled={isGenerating}
+                padding={BUTTONS_PADDING}
+              >
                 {SUPPORTED_LANGUAGES.map((lang) => (
                   <option key={lang.code} value={lang.code}>
                     {lang.name}

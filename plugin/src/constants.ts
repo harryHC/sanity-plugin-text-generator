@@ -1,8 +1,9 @@
 interface Model {
-  url: string
+  id: string
   maxTokens: number
   temperature: number
-  model: string
+  name: string
+  dtype: string
 }
 
 interface ModelsCollection {
@@ -10,18 +11,23 @@ interface ModelsCollection {
   DEEPSEEK_R1_1_5B: Model
 }
 
+// onnx-community/moondream2.text_model-ONNX
+// onnx-community/Qwen2.5-1.5B-Instruct
+// onnx-community/gemma-3-1b-it-ONNX-web
 const MODELS: ModelsCollection = {
   GEMMA_3_1B: {
-    url: 'https://media.githubusercontent.com/media/harryHC/sanity-plugin-text-generator/main/gemma3-1b-it-int4.task',
+    id: 'onnx-community/gemma-3-1b-it-ONNX-web',
     maxTokens: 2048,
     temperature: 0.8,
-    model: 'Gemma 3 1B',
+    name: 'Gemma 3 1B',
+    dtype: 'q8',
   },
   DEEPSEEK_R1_1_5B: {
-    url: 'https://media.githubusercontent.com/media/harryHC/sanity-plugin-text-generator/main/deepseek_q8_ekv1280.task',
+    id: 'onnx-community/DeepSeek-R1-Distill-Qwen-1.5B-ONNX',
     maxTokens: 2048,
     temperature: 0.8,
-    model: 'DeepSeek R1 1.5B',
+    name: 'DeepSeek R1 1.5B',
+    dtype: 'q4f16',
   },
 }
 
